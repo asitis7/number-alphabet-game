@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>숫자 순서 맞추기 게임</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: white;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .scores {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .timer-section {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        .timer {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+            font-size: 18px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        
+        .timer.warning {
+            background: rgba(255, 152, 0, 0.8);
+            animation: pulse 1s infinite;
+        }
+        
+        .timer.danger {
+            background: rgba(244, 67, 54, 0.8);
+            animation: pulse 0.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .score-item {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .game-info {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .start-number-selector {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .game-mode-selection {
+            margin-bottom: 15px;
+        }
+        
+        .game-mode-selection h3 {
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .game-mode-selection input[type="radio"] {
+            margin-right: 8px;
+        }
+        
+        .game-mode-selection label {
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .game-instructions {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .game-instructions h4 {
+            margin-bottom: 8px;
+            color: #4CAF50;
+        }
+        
+        .game-instructions p {
+            margin: 4px 0;
+            line-height: 1.4;
+        }
+        
+        .start-number-selector input {
+            width: 80px;
+            padding: 8px;
+            font-size: 16px;
+            text-align: center;
+            border: none;
+            border-radius: 8px;
+            margin: 0 10px;
+        }
+        
+        .start-number-selector select {
+            padding: 8px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            margin: 0 10px;
+            background: white;
+        }
+        
+        .start-game-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: all 0.3s;
+        }
+        
+        .start-game-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            max-width: 300px;
+            margin: 0 auto 20px;
+        }
+        
+        .grid-cell {
+            aspect-ratio: 1;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 50px;
+        }
+        
+        .grid-cell:hover:not(.clicked) {
+            background: rgba(255, 255, 255, 1);
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .grid-cell.clicked {
+            background: #4CAF50;
+            color: white;
+            transform: scale(0.95);
+        }
+        
+        .grid-cell.wrong {
+            background: #f44336;
+            color: white;
+            animation: shake 0.5s;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .game-status {
+            text-align: center;
+            font-size: 18px;
+            margin-bottom: 20px;
+            min-height: 25px;
+        }
+        
+        .reset-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .reset-btn:hover {
+            background: #ff5252;
+            transform: translateY(-2px);
+        }
+        
+        .completion-message {
+            background: rgba(76, 175, 80, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .game-over-message {
+            background: rgba(244, 67, 54, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        @media (max-width: 480px) {
+            .game-grid {
+                max-width: 280px;
+                gap: 6px;
+            }
+            
+            .grid-cell {
+                font-size: 16px;
+                min-height: 45px;
+            }
+            
+            .title {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="title">숫자/알파벳 순서 맞추기 게임</h1>
+        <div class="scores">
+            <div class="score-item">
+                이번 점수: <span id="currentScore">0</span>
+            </div>
+            <div class="score-item">
+                누적 점수: <span id="totalScore">0</span>
+            </div>
+        </div>
+        <div class="timer-section">
+            <div class="timer" id="timer">남은 시간: 120초</div>
+        </div>
+    </div>
+    
+    <div class="game-info">
+        <div>게임 횟수: <span id="gameCount">0</span></div>
+    </div>
+    
+    <div class="start-number-selector" id="startNumberSelector">
+        <div class="game-mode-selection">
+            <h3>게임 모드 선택:</h3>
+            <div style="margin: 10px 0;">
+                <input type="radio" id="numberMode" name="gameMode" value="number" checked>
+                <label for="numberMode">📊 숫자 모드</label>
+            </div>
+            <div style="margin: 10px 0;">
+                <input type="radio" id="alphabetMode" name="gameMode" value="alphabet">
+                <label for="alphabetMode">🔤 알파벳 모드</label>
+            </div>
+        </div>
+        
+        <div id="numberModeInput">
+            <div>시작 번호 선택 (1-976):</div>
+            <input type="number" id="startNumberInput" min="1" max="976" value="1">
+        </div>
+        
+        <div id="alphabetModeInput" style="display: none;">
+            <div>시작 알파벳 선택 (a-z):</div>
+            <select id="startAlphabetInput">
+                <option value="a">a</option>
+                <option value="b">b</option>
+                <option value="c">c</option>
+                <option value="d">d</option>
+                <option value="e">e</option>
+                <option value="f">f</option>
+                <option value="g">g</option>
+                <option value="h">h</option>
+                <option value="i">i</option>
+                <option value="j">j</option>
+                <option value="k">k</option>
+                <option value="l">l</option>
+                <option value="m">m</option>
+                <option value="n">n</option>
+                <option value="o">o</option>
+                <option value="p">p</option>
+                <option value="q">q</option>
+                <option value="r">r</option>
+                <option value="s">s</option>
+                <option value="t">t</option>
+                <option value="u">u</option>
+                <option value="v">v</option>
+                <option value="w">w</option>
+                <option value="x">x</option>
+                <option value="y">y</option>
+                <option value="z">z</option>
+            </select>
+        </div>
+        
+        <button class="start-game-btn" onclick="startGame()">게임 시작</button>
+        
+        <div class="game-instructions" style="margin-top: 15px; font-size: 14px; text-align: left;">
+            <h4>📋 게임 설명:</h4>
+            <p><strong>숫자 모드:</strong> 연속된 25개 숫자를 순서대로 클릭</p>
+            <p><strong>알파벳 모드:</strong> 연속된 25개 알파벳을 순서대로 클릭</p>
+            <p>• z 다음은 a로 순환됩니다</p>
+            <p>• 점수: a,b,c 시작 = 25점 / 기타 = 50점</p>
+            <p>• 제한시간: 120초</p>
+        </div>
+    </div>
+    
+    <div class="completion-message hidden" id="completionMessage">
+        <h2>축하합니다! 🎉</h2>
+        <p>게임을 완료했습니다!</p>
+        <p>이번 점수: <span id="gameScore"></span></p>
+        <p>완료 시간: <span id="completionTime"></span>초</p>
+    </div>
+    
+    <div class="game-over-message hidden" id="gameOverMessage">
+        <h2>게임 오버! ⏰</h2>
+        <p>시간이 초과되었습니다!</p>
+        <p>120초 안에 완료해야 합니다.</p>
+    </div>
+    
+    <div class="game-grid" id="gameGrid"></div>
+    
+    <div class="game-status" id="gameStatus">
+        다음 클릭할 번호: <span id="nextNumber">-</span>
+    </div>
+    
+    <button class="reset-btn" onclick="resetGame()">새 게임</button>
+
+    <script>
+        let gameState = {
+            currentGame: 0,
+            totalScore: 0,
+            currentScore: 0,
+            numbers: [],
+            nextExpected: 1,
+            startNumber: 1,
+            gameActive: false,
+            timeLeft: 120,
+            gameTimer: null,
+            startTime: null,
+            gameMode: 'number',
+            startAlphabet: 'a'
+        };
+
+        // 게임 초기화
+        function initGame() {
+            const grid = document.getElementById('gameGrid');
+            grid.innerHTML = '';
+            
+            for (let i = 0; i < 25; i++) {
+                const cell = document.createElement('button');
+                cell.className = 'grid-cell';
+                cell.onclick = () => handleCellClick(i);
+                grid.appendChild(cell);
+            }
+        }
+
+        // 게임 시작
+        function startGame() {
+            const gameMode = document.querySelector('input[name="gameMode"]:checked').value;
+            gameState.gameMode = gameMode;
+            
+            if (gameMode === 'number') {
+                const startInput = document.getElementById('startNumberInput');
+                const startNum = parseInt(startInput.value);
+                
+                if (startNum < 1 || startNum > 976) {
+                    alert('시작 번호는 1부터 976까지 입력해주세요.');
+                    return;
+                }
+                
+                gameState.startNumber = startNum;
+                gameState.currentScore = startNum + 24;
+                
+                gameState.numbers = [];
+                for (let i = 0; i < 25; i++) {
+                    gameState.numbers.push(startNum + i);
+                }
+            } else {
+                const startAlphabet = document.getElementById('startAlphabetInput').value;
+                gameState.startAlphabet = startAlphabet;
+                
+                if (startAlphabet === 'a' || startAlphabet === 'b' || startAlphabet === 'c') {
+                    gameState.currentScore = 25;
+                } else {
+                    gameState.currentScore = 50;
+                }
+                
+                gameState.numbers = [];
+                const startCharCode = startAlphabet.charCodeAt(0);
+                for (let i = 0; i < 25; i++) {
+                    const charCode = ((startCharCode - 97 + i) % 26) + 97;
+                    gameState.numbers.push(String.fromCharCode(charCode));
+                }
+            }
+            
+            gameState.currentGame++;
+            gameState.nextExpected = 1;
+            gameState.gameActive = true;
+            gameState.timeLeft = 120;
+            gameState.startTime = Date.now();
+            
+            startTimer();
+            shuffleArray(gameState.numbers);
+            
+            updateDisplay();
+            displayNumbers();
+            
+            document.getElementById('completionMessage').classList.add('hidden');
+            document.getElementById('gameOverMessage').classList.add('hidden');
+            
+            if (gameState.currentGame > 1) {
+                document.getElementById('startNumberSelector').style.display = 'none';
+            }
+        }
+
+        function startTimer() {
+            if (gameState.gameTimer) {
+                clearInterval(gameState.gameTimer);
+            }
+            
+            gameState.gameTimer = setInterval(() => {
+                gameState.timeLeft--;
+                updateTimer();
+                
+                if (gameState.timeLeft <= 0) {
+                    gameOver();
+                }
+            }, 1000);
+        }
+
+        function updateTimer() {
+            const timerElement = document.getElementById('timer');
+            timerElement.textContent = `남은 시간: ${gameState.timeLeft}초`;
+            
+            timerElement.classList.remove('warning', 'danger');
+            if (gameState.timeLeft <= 30) {
+                timerElement.classList.add('danger');
+            } else if (gameState.timeLeft <= 60) {
+                timerElement.classList.add('warning');
+            }
+        }
+
+        function gameOver() {
+            gameState.gameActive = false;
+            
+            if (gameState.gameTimer) {
+                clearInterval(gameState.gameTimer);
+                gameState.gameTimer = null;
+            }
+            
+            document.getElementById('gameOverMessage').classList.remove('hidden');
+            document.getElementById('startNumberSelector').style.display = 'block';
+            
+            gameState.timeLeft = 120;
+            updateTimer();
+            document.getElementById('timer').classList.remove('warning', 'danger');
+            
+            updateGameStatus();
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function displayNumbers() {
+            const cells = document.querySelectorAll('.grid-cell');
+            cells.forEach((cell, index) => {
+                cell.textContent = gameState.numbers[index];
+                cell.classList.remove('clicked', 'wrong');
+            });
+        }
+
+        function handleCellClick(index) {
+            if (!gameState.gameActive) return;
+            
+            const cell = document.querySelectorAll('.grid-cell')[index];
+            const cellValue = gameState.numbers[index];
+            let expectedValue;
+            
+            if (gameState.gameMode === 'number') {
+                expectedValue = gameState.startNumber + gameState.nextExpected - 1;
+            } else {
+                const startCharCode = gameState.startAlphabet.charCodeAt(0);
+                const expectedCharCode = ((startCharCode - 97 + gameState.nextExpected - 1) % 26) + 97;
+                expectedValue = String.fromCharCode(expectedCharCode);
+            }
+            
+            if (cellValue === expectedValue) {
+                cell.classList.add('clicked');
+                gameState.nextExpected++;
+                
+                if (gameState.nextExpected > 25) {
+                    completeGame();
+                } else {
+                    updateGameStatus();
+                }
+            } else {
+                cell.classList.add('wrong');
+                setTimeout(() => {
+                    cell.classList.remove('wrong');
+                }, 500);
+            }
+        }
+
+        function completeGame() {
+            gameState.gameActive = false;
+            gameState.totalScore += gameState.currentScore;
+            
+            if (gameState.gameTimer) {
+                clearInterval(gameState.gameTimer);
+                gameState.gameTimer = null;
+            }
+            
+            const completionTime = Math.floor((Date.now() - gameState.startTime) / 1000);
+            
+            const completionMessage = document.getElementById('completionMessage');
+            document.getElementById('gameScore').textContent = gameState.currentScore;
+            document.getElementById('completionTime').textContent = completionTime;
+            completionMessage.classList.remove('hidden');
+            
+            document.getElementById('startNumberSelector').style.display = 'block';
+            
+            gameState.timeLeft = 120;
+            updateTimer();
+            document.getElementById('timer').classList.remove('warning', 'danger');
+            
+            updateDisplay();
+            updateGameStatus();
+        }
+
+        function updateDisplay() {
+            document.getElementById('gameCount').textContent = gameState.currentGame;
+            document.getElementById('currentScore').textContent = gameState.currentScore;
+            document.getElementById('totalScore').textContent = gameState.totalScore;
+        }
+
+        function updateGameStatus() {
+            const statusElement = document.getElementById('gameStatus');
+            if (!gameState.gameActive) {
+                statusElement.innerHTML = '게임이 끝났습니다!';
+            } else {
+                let nextValue;
+                if (gameState.gameMode === 'number') {
+                    nextValue = gameState.startNumber + gameState.nextExpected - 1;
+                } else {
+                    const startCharCode = gameState.startAlphabet.charCodeAt(0);
+                    const nextCharCode = ((startCharCode - 97 + gameState.nextExpected - 1) % 26) + 97;
+                    nextValue = String.fromCharCode(nextCharCode);
+                }
+                statusElement.innerHTML = `다음 클릭할 ${gameState.gameMode === 'number' ? '번호' : '알파벳'}: <span id="nextNumber">${nextValue}</span>`;
+            }
+        }
+
+        function resetGame() {
+            gameState.gameActive = false;
+            gameState.nextExpected = 1;
+            gameState.currentScore = 0;
+            gameState.timeLeft = 120;
+            
+            if (gameState.gameTimer) {
+                clearInterval(gameState.gameTimer);
+                gameState.gameTimer = null;
+            }
+            
+            const cells = document.querySelectorAll('.grid-cell');
+            cells.forEach(cell => {
+                cell.textContent = '';
+                cell.classList.remove('clicked', 'wrong');
+            });
+            
+            document.getElementById('completionMessage').classList.add('hidden');
+            document.getElementById('gameOverMessage').classList.add('hidden');
+            document.getElementById('startNumberSelector').style.display = 'block';
+            
+            updateTimer();
+            document.getElementById('timer').classList.remove('warning', 'danger');
+            
+            updateDisplay();
+            updateGameStatus();
+        }
+
+        function startFirstGame() {
+            gameState.currentGame = 1;
+            gameState.gameMode = 'number';
+            gameState.startNumber = 1;
+            gameState.nextExpected = 1;
+            gameState.gameActive = true;
+            gameState.timeLeft = 120;
+            gameState.startTime = Date.now();
+            
+            startTimer();
+            
+            gameState.numbers = [];
+            for (let i = 1; i <= 25; i++) {
+                gameState.numbers.push(i);
+            }
+            
+            gameState.currentScore = 25;
+            
+            shuffleArray(gameState.numbers);
+            
+            updateDisplay();
+            displayNumbers();
+            updateGameStatus();
+            
+            document.getElementById('startNumberSelector').style.display = 'none';
+        }
+
+        function handleGameModeChange() {
+            const gameMode = document.querySelector('input[name="gameMode"]:checked').value;
+            const numberInput = document.getElementById('numberModeInput');
+            const alphabetInput = document.getElementById('alphabetModeInput');
+            
+            if (gameMode === 'number') {
+                numberInput.style.display = 'block';
+                alphabetInput.style.display = 'none';
+            } else {
+                numberInput.style.display = 'none';
+                alphabetInput.style.display = 'block';
+            }
+        }
+
+        window.onload = function() {
+            initGame();
+            startFirstGame();
+            
+            document.querySelectorAll('input[name="gameMode"]').forEach(radio => {
+                radio.addEventListener('change', handleGameModeChange);
+            });
+        };
+    </script>
+</body>
+</html>
