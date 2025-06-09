@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>랜덤 순서 맞추기 게임</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: white;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .scores {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .timer-section {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        .timer {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+            font-size: 18px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        
+        .timer.warning {
+            background: rgba(255, 152, 0, 0.8);
+            animation: pulse 1s infinite;
+        }
+        
+        .timer.danger {
+            background: rgba(244, 67, 54, 0.8);
+            animation: pulse 0.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .score-item {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .game-info {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .start-game-section {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+        
+        .game-mode-display {
+            background: rgba(255, 255, 255, 0.3);
+            padding: 15px;
+            border-radius: 12px;
+            margin: 15px 0;
+            border: 3px solid #4CAF50;
+        }
+        
+        .game-mode-display h3 {
+            margin-bottom: 10px;
+            color: #4CAF50;
+            font-size: 20px;
+        }
+        
+        .mode-details {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 8px 0;
+        }
+        
+        .random-emoji {
+            font-size: 24px;
+            margin: 0 10px;
+        }
+        
+        .start-game-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 15px;
+        }
+        
+        .start-game-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            max-width: 300px;
+            margin: 0 auto 20px;
+        }
+        
+        .grid-cell {
+            aspect-ratio: 1;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 50px;
+        }
+        
+        .grid-cell:hover:not(.clicked) {
+            background: rgba(255, 255, 255, 1);
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .grid-cell.clicked {
+            background: #4CAF50;
+            color: white;
+            transform: scale(0.95);
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.6);
+            border: 2px solid #2E7D32;
+        }
+        
+        .grid-cell.wrong {
+            background: #f44336;
+            color: white;
+            animation: shake 0.5s;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .game-status {
+            text-align: center;
+            font-size: 18px;
+            margin-bottom: 20px;
+            min-height: 25px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 12px 20px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+            font-weight: bold;
+        }
+        
+        .next-target {
+            color: #FFD700;
+            font-size: 24px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3), 0 0 10px #FFD700; }
+            to { text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3), 0 0 20px #FFD700, 0 0 30px #FFD700; }
+        }
+        
+        .reset-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .reset-btn:hover {
+            background: #ff5252;
+            transform: translateY(-2px);
+        }
+        
+        .completion-message {
+            background: rgba(76, 175, 80, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .game-over-message {
+            background: rgba(244, 67, 54, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .game-instructions {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 12px;
+            border-left: 4px solid #ff6b6b;
+            margin-top: 20px;
+            text-align: left;
+        }
+        
+        .game-instructions h4 {
+            margin-bottom: 10px;
+            color: #ff6b6b;
+            font-size: 16px;
+        }
+        
+        .game-instructions p {
+            margin: 6px 0;
+            line-height: 1.4;
+            font-size: 14px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        @media (max-width: 480px) {
+            .game-grid {
+                max-width: 280px;
+                gap: 6px;
+            }
+            
+            .grid-cell {
+                font-size: 16px;
+                min-height: 45px;
+            }
+            
+            .title {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="title">🎲 랜덤 순서 맞추기 게임</h1>
+        <div class="scores">
+            <div class="score-item">
+                이번 점수: <span id="currentScore">0</span>
+            </div>
+            <div class="score-item">
+                누적 점수: <span id="totalScore">0</span>
+            </div>
+        </div>
+        <div class="timer-section">
+            <div class="timer" id="timer">남은 시간: 120초</div>
+        </div>
+    </div>
+    
+    <div class="game-info">
+        <div>게임 횟수: <span id="gameCount">0</span></div>
+    </div>
+    
+    <div class="start-game-section" id="startGameSection">
+        <h2>🎮 새로운 랜덤 게임</h2>
+        
+        <div class="game-mode-display" id="gameModeDisplay">
+            <h3 id="currentModeTitle">🎲 랜덤 모드 생성 중...</h3>
+            <div class="mode-details" id="modeDetails">
+                게임 시작 버튼을 클릭하여 랜덤 모드를 확인하세요!
+            </div>
+        </div>
+        
+        <button class="start-game-btn" onclick="generateRandomGame()">🎲 랜덤 게임 시작!</button>
+        
+        <div class="game-instructions">
+            <h4>🎯 게임 규칙:</h4>
+            <p><strong>🎲 완전 랜덤:</strong> 숫자 또는 알파벳 모드가 랜덤하게 결정됩니다</p>
+            <p><strong>📊 숫자 모드:</strong> 1~976 범위에서 랜덤 시작점, 연속 25개 숫자</p>
+            <p><strong>🔤 알파벳 모드:</strong> a~z 중 랜덤 시작점, 연속 25개 알파벳 (순환)</p>
+            <p><strong>⏰ 제한시간:</strong> 120초 안에 순서대로 모든 칸 클릭</p>
+            <p><strong>🏆 점수:</strong></p>
+            <p>• 알파벳 a,b,c 시작: 25점</p>
+            <p>• 알파벳 d~z 시작: 50점</p>
+            <p>• 숫자: 가장 높은 숫자가 점수</p>
+        </div>
+    </div>
+    
+    <div class="completion-message hidden" id="completionMessage">
+        <h2>축하합니다! 🎉</h2>
+        <p>게임을 완료했습니다!</p>
+        <p>이번 점수: <span id="gameScore"></span></p>
+        <p>완료 시간: <span id="completionTime"></span>초</p>
+    </div>
+    
+    <div class="game-over-message hidden" id="gameOverMessage">
+        <h2>게임 오버! ⏰</h2>
+        <p>시간이 초과되었습니다!</p>
+        <p>120초 안에 완료해야 합니다.</p>
+    </div>
+    
+    <div class="game-grid" id="gameGrid"></div>
+    
+    <div class="game-status" id="gameStatus">
+        랜덤 게임을 시작해보세요! 🎲
+    </div>
+    
+    <button class="reset-btn" onclick="resetGame()">새 게임</button>
+
+    <script>
+        let gameState = {
+            currentGame: 0,
+            totalScore: 0,
+            currentScore: 0,
+            numbers: [],
+            nextExpected: 1,
+            startNumber: 1,
+            gameActive: false,
+            timeLeft: 120,
+            gameTimer: null,
+            startTime: null,
+            gameMode: 'number',
+            startAlphabet: 'a'
+        };
+
+        // 게임 초기화
+        function initGame() {
+            const grid = document.getElementById('gameGrid');
+            grid.innerHTML = '';
+            
+            for (let i = 0; i < 25; i++) {
+                const cell = document.createElement('button');
+                cell.className = 'grid-cell';
+                cell.onclick = () => handleCellClick(i);
+                grid.appendChild(cell);
+            }
+        }
+
+        // 랜덤 게임 생성 및 시작
+        function generateRandomGame() {
+            // 50% 확률로 숫자 또는 알파벳 모드 결정
+            const isNumberMode = Math.random() < 0.5;
+            gameState.gameMode = isNumberMode ? 'number' : 'alphabet';
+            
+            if (gameState.gameMode === 'number') {
+                // 1~976 범위에서 랜덤 시작 숫자
+                gameState.startNumber = Math.floor(Math.random() * 976) + 1;
+                gameState.currentScore = gameState.startNumber + 24;
+                
+                // 연속된 25개 숫자 생성
+                gameState.numbers = [];
+                for (let i = 0; i < 25; i++) {
+                    gameState.numbers.push(gameState.startNumber + i);
+                }
+                
+                // 모드 정보 업데이트
+                document.getElementById('currentModeTitle').innerHTML = '📊 숫자 모드';
+                document.getElementById('modeDetails').innerHTML = 
+                    `시작 숫자: ${gameState.startNumber}<br>
+                     범위: ${gameState.startNumber} ~ ${gameState.startNumber + 24}<br>
+                     점수: ${gameState.currentScore}점`;
+                
+            } else {
+                // a~z 중 랜덤 시작 알파벳
+                const randomAlphabetIndex = Math.floor(Math.random() * 26);
+                gameState.startAlphabet = String.fromCharCode(97 + randomAlphabetIndex);
+                
+                // 점수 계산
+                if (gameState.startAlphabet === 'a' || gameState.startAlphabet === 'b' || gameState.startAlphabet === 'c') {
+                    gameState.currentScore = 25;
+                } else {
+                    gameState.currentScore = 50;
+                }
+                
+                // 연속된 25개 알파벳 생성 (순환)
+                gameState.numbers = [];
+                const startCharCode = gameState.startAlphabet.charCodeAt(0);
+                for (let i = 0; i < 25; i++) {
+                    const charCode = ((startCharCode - 97 + i) % 26) + 97;
+                    gameState.numbers.push(String.fromCharCode(charCode));
+                }
+                
+                // 마지막 알파벳 계산 (순환 고려)
+                const endCharCode = ((startCharCode - 97 + 24) % 26) + 97;
+                const endAlphabet = String.fromCharCode(endCharCode);
+                
+                // 모드 정보 업데이트
+                document.getElementById('currentModeTitle').innerHTML = '🔤 알파벳 모드';
+                document.getElementById('modeDetails').innerHTML = 
+                    `시작 알파벳: ${gameState.startAlphabet}<br>
+                     범위: ${gameState.startAlphabet} ~ ${endAlphabet} (순환)<br>
+                     점수: ${gameState.currentScore}점`;
+            }
+            
+            // 게임 시작
+            startGame();
+        }
+
+        // 게임 시작
+        function startGame() {
+            gameState.currentGame++;
+            gameState.nextExpected = 1;
+            gameState.gameActive = true;
+            gameState.timeLeft = 120;
+            gameState.startTime = Date.now();
+            
+            // 타이머 시작
+            startTimer();
+            
+            // 배열을 랜덤하게 섞기
+            shuffleArray(gameState.numbers);
+            
+            // UI 업데이트
+            updateDisplay();
+            displayNumbers();
+            updateGameStatus();
+            
+            // 메시지들 숨기기
+            document.getElementById('completionMessage').classList.add('hidden');
+            document.getElementById('gameOverMessage').classList.add('hidden');
+            
+            // 게임 시작 후 시작 섹션 숨기기
+            document.getElementById('startGameSection').style.display = 'none';
+        }
+
+        function startTimer() {
+            if (gameState.gameTimer) {
+                clearInterval(gameState.gameTimer);
+            }
+            
+            gameState.gameTimer = setInterval(() => {
+                gameState.timeLeft--;
+                updateTimer();
+                
+                if (gameState.timeLeft <= 0) {
+                    gameOver();
+                }
+            }, 1000);
+        }
+
+        function updateTimer() {
+            const timerElement = document.getElementById('timer');
+            timerElement.textContent = `남은 시간: ${gameState.timeLeft}초`;
+            
+            timerElement.classList.remove('warning', 'danger');
+            if (gameState.timeLeft <= 30) {
+                timerElement.classList.add('danger');
+            } else if (gameState.timeLeft <= 60) {
+                timerElement.classList.add('warning');
+            }
+        }
+
+        function gameOver() {
+            gameState.gameActive = false;
+            
+            if (gameState.gameTimer) {
+                clearInterval(gameState.gameTimer);
+                gameState.gameTimer = null;
+            }
+            
+            document.getElementById('gameOverMessage').classList.remove('hidden');
+            document.getElementById('startGameSection').style.display = 'block';
+            
+            gameState.timeLeft = 120;
+            updateTimer();
+            document.getElementById('timer').classList.remove('warning', 'danger');
+            
+            updateGameStatus();
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function displayNumbers() {
+            const cells = document.querySelectorAll('.grid-cell');
+            cells.forEach((cell, index) => {
+                cell.textContent = gameState.numbers[index];
+                cell.classList.remove('clicked', 'wrong');
+            });
+        }
+
+        function handleCellClick(index) {
+            if (!gameState.gameActive) return;
+            
+            const cell = document.querySelectorAll('.grid-cell')[index];
+            const cellValue = gameState.numbers[index];
+            let expectedValue;
+            
+            if (gameState.gameMode === 'number') {
+                expectedValue = gameState.startNumber + gameState.nextExpected - 1;
+            } else {
+                const startCharCode = gameState.startAlphabet.charCodeAt(0);
+                const expectedCharCode = ((startCharCode - 97 + gameState.nextExpected - 1) % 26) + 97;
+                expectedValue = String.fromCharCode(expectedCharCode);
+            }
+            
+            if (cellValue === expectedValue) {
+                cell.classList.add('clicked');
+                gameState.nextExpected++;
+                
+                if (gameState.nextExpected > 25) {
+                    completeGame();
+                } else {
+                    updateGameStatus();
+                }
+            } else {
+                cell.classList.add('wrong');
+                setTimeout(() => {
+                    cell.classList.remove('wrong');
+                }, 500);
+            }
+        }
+
+        function completeGame() {
+            gameState.gameActive = false;
+            gameState.totalScore += gameState.currentScore;
+            
+            if (gameState.gameTimer) {
+                clearInterval(gameState.gameTimer);
+                gameState.gameTimer = null;
+            }
+            
+            const completionTime = Math.floor((Date.now() - gameState.startTime) / 1000);
+            
+            const completionMessage = document.getElementById('completionMessage');
+            document.getElementById('gameScore').textContent = gameState.currentScore;
+            document.getElementById('completionTime').textContent = completionTime;
+            completionMessage.classList.remove('hidden');
+            
+            document.getElementById('startGameSection').style.display = 'block';
+            
+            gameState.timeLeft = 120;
+            updateTimer();
+            document.getElementById('timer').classList.remove('warning', 'danger');
+            
+            updateDisplay();
+            updateGameStatus();
+        }
+
+        function updateDisplay() {
+            document.getElementById('gameCount').textContent = gameState.currentGame;
+            document.getElementById('currentScore').textContent = gameState.currentScore;
+            document.getElementById('totalScore').textContent = gameState.totalScore;
+        }
+
+        function updateGameStatus() {
+            const statusElement = document.getElementById('gameStatus');
+            if (!gameState.gameActive) {
+                statusElement.innerHTML = '새로운 랜덤 게임을 시작해보세요! 🎲';
+            } else {
+                let nextValue;
+                if (gameState.gameMode === 'number') {
+                    nextValue = gameState.startNumber + gameState.nextExpected - 1;
+                } else {
+                    const startCharCode = gameState.startAlphabet.charCodeAt(0);
+                    const nextCharCode = ((startCharCode - 97 + gameState.nextExpected - 1) % 26) + 97;
+                    nextValue = String.fromCharCode(nextCharCode);
+                }
+                statusElement.innerHTML = `다음 클릭할 ${gameState.gameMode === 'number' ? '번호' : '알파벳'}: <span class="next-target">${nextValue}</span>`;
+            }
+        }
+
+        function resetGame() {
+            gameState.gameActive = false;
+            gameState.nextExpected = 1;
+            gameState.currentScore = 0;
+            gameState.timeLeft = 120;
+            
+            if (gameState.gameTimer) {
+                clearInterval(gameState.gameTimer);
+                gameState.gameTimer = null;
+            }
+            
+            const cells = document.querySelectorAll('.grid-cell');
+            cells.forEach(cell => {
+                cell.textContent = '';
+                cell.classList.remove('clicked', 'wrong');
+            });
+            
+            document.getElementById('completionMessage').classList.add('hidden');
+            document.getElementById('gameOverMessage').classList.add('hidden');
+            document.getElementById('startGameSection').style.display = 'block';
+            
+            updateTimer();
+            document.getElementById('timer').classList.remove('warning', 'danger');
+            
+            // 모드 디스플레이 초기화
+            document.getElementById('currentModeTitle').innerHTML = '🎲 랜덤 모드 생성 중...';
+            document.getElementById('modeDetails').innerHTML = '게임 시작 버튼을 클릭하여 랜덤 모드를 확인하세요!';
+            
+            updateDisplay();
+            updateGameStatus();
+        }
+
+        // 페이지 로드 시 초기화
+        window.onload = function() {
+            initGame();
+            updateGameStatus();
+        };
+    </script>
+</body>
+</html>
